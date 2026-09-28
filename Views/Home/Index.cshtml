@@ -1,120 +1,198 @@
-﻿@{
-    Layout = null;
+@{
+    ViewData["Title"] = "ระบบติดตามปัญหาแกนว่าง (Bobbin Defect Tracker)";
+    Layout = null; // หน้านี้เป็นหน้าเดี่ยว (self-contained) — ถ้าโปรเจคมี _Layout.cshtml อยู่แล้ว
+                   // สามารถลบ <head>/<html> ด้านนอกออก แล้วใส่เฉพาะส่วน <main> ได้
+                   // พร้อมกับใส่ลิงก์ CSS ด้านล่างไว้ใน _Layout เช่นกัน
 }
 <!DOCTYPE html>
 <html lang="th">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>RepairTrack — แผงเฝ้าระวังงานซ่อม</title>
-<script src="~/js/theme-toggle.js" asp-append-version="true"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="~/css/repair-dashboard.css" asp-append-version="true" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="~/css/app-home.css" asp-append-version="true" />
 </head>
 <body>
 
-  <div class="topbar">
-    <div>
-      <p class="eyebrow"><span class="dot">●</span> REPAIR TIMELINE MONITOR</p>
-      <h1>แผงเฝ้าระวังงาน<span class="accent">ซ่อม</span><span class="save-status" id="saveStatus"></span></h1>
-      <div class="month-bar">
-        <select id="monthSelect" class="month-select" aria-label="เลือกเดือน"></select>
-        <button type="button" id="addMonthBtn" class="add-month-btn">+ เพิ่มเดือน</button>
-      </div>
-    </div>
-    <div class="stat-row">
-      <div class="stat-card crit">
-        <div class="label">🔴 เครื่องรอซ่อมทั้งหมดตอนนี้</div>
-        <div class="value"><span id="statPendingMachines">0</span><small>เครื่อง</small></div>
-      </div>
-      <div class="stat-card warn">
-        <div class="label">📈 อาการฮิตสัปดาห์นี้</div>
-        <div class="value" id="statHotIssue" style="font-size:18px;">–</div>
-      </div>
-      <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="สลับธีมสว่าง/มืด">
-        <span class="theme-icon">🌙</span>
-        <span class="theme-label">Dark Mode</span>
-      </button>
-    </div>
-  </div>
-
-  <div class="controls">
-    <div class="tabs" id="partTabs"></div>
-    <div class="search-wrap">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="searchBox" placeholder="ค้นหาเครื่อง เช่น T09" />
-    </div>
-    <label class="toggle-pending">
-      <input type="checkbox" id="onlyPending" />
-      แสดงเฉพาะเครื่องที่มีงานค้าง
-    </label>
-    <div class="legend">
-      <span><i style="background:var(--red)"></i> งานหนัก / เพิ่มมาก</span>
-      <span><i style="background:var(--amber)"></i> งานงอก</span>
-      <span><i style="background:#5b8def"></i> ทรงตัว</span>
-      <span><i style="background:var(--green)"></i> ดีขึ้น / เคลียร์แล้ว</span>
-      <span><i style="background:#3a4257"></i> ไม่มีงาน</span>
-    </div>
-  </div>
-
-  <div class="board">
-    <div class="table-scroll">
-      <table>
-        <thead><tr id="tableHead"></tr></thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <footer class="note">// แตะที่แถวเครื่องเพื่อแก้ไขจำนวนอาการเสีย — สถานะปัจจุบันดึงจากค่าล่าสุดที่มีข้อมูลของแต่ละอาการ ไม่ใช่ผลรวมของทุกสัปดาห์</footer>
-
-  <div class="modal-backdrop" id="machineModalBackdrop" hidden>
-    <div class="machine-modal" id="machineModal" role="dialog" aria-modal="true" aria-labelledby="modalMachineId">
-      <div class="modal-header">
-        <div>
-          <p class="modal-eyebrow" id="modalPartName">–</p>
-          <h2 id="modalMachineId">–</h2>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <div class="navbar-logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                </div>
+                <span class="navbar-title">ระบบติดตามปัญหาแกนว่าง</span>
+                <span class="navbar-subtitle">Bobbin Defect Tracker</span>
+            </div>
+            <div class="navbar-actions">
+                <div class="navbar-date" id="current-date"></div>
+                <div class="navbar-avatar">ชA</div>
+            </div>
         </div>
-        <button type="button" class="modal-close" id="modalCloseBtn" aria-label="ปิด">✕</button>
-      </div>
-      <div class="modal-total" id="modalTotal"></div>
-      <div id="modalWeekPicker"></div>
-      <div class="modal-issues" id="modalIssues"></div>
-      <div class="modal-footer">
-        <button type="button" id="modalSaveBtn" class="modal-save-btn"><span class="save-icon">💾</span> บันทึก</button>
-      </div>
-    </div>
-  </div>
+    </nav>
 
-  <div class="modal-backdrop" id="newMonthModalBackdrop" hidden>
-    <div class="machine-modal new-month-modal" role="dialog" aria-modal="true" aria-labelledby="newMonthTitle">
-      <div class="modal-header">
-        <div>
-          <p class="modal-eyebrow">REPAIR TIMELINE</p>
-          <h2 id="newMonthTitle">เพิ่มเดือนใหม่</h2>
-        </div>
-        <button type="button" class="modal-close" id="newMonthCloseBtn" aria-label="ปิด">✕</button>
-      </div>
-      <div class="new-month-body">
-        <label class="new-month-label">เลือกเดือนที่ต้องการสร้าง</label>
-        <div class="thai-month-picker">
-          <div class="tmp-year-row">
-            <button type="button" class="tmp-year-btn" id="tmpYearPrev" aria-label="ปีก่อนหน้า">‹</button>
-            <strong class="tmp-year-label" id="tmpYearLabel">–</strong>
-            <button type="button" class="tmp-year-btn" id="tmpYearNext" aria-label="ปีถัดไป">›</button>
-          </div>
-          <div class="tmp-month-grid" id="tmpMonthGrid"></div>
-        </div>
-        <p class="new-month-hint" id="newMonthHint"></p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" id="createMonthBtn" class="modal-save-btn"><span class="save-icon">🗓️</span> สร้างเดือนนี้</button>
-      </div>
-    </div>
-  </div>
+    <!-- Main Content -->
+    <main class="page-container">
 
-<script src="~/js/repair-dashboard.js" asp-append-version="true"></script>
+        <!-- Header -->
+        <div class="page-header">
+            <div>
+                <h1 class="page-header-title">รายการแจ้งซ่อมประจำวัน</h1>
+                <p class="page-header-subtitle">วิเคราะห์และติดตามสถานะการเกิดซ้ำของแกนเครื่องทอด้าย</p>
+            </div>
+        </div>
+
+        <!-- Filter Panel -->
+        <div class="filter-panel">
+            <div class="filter-row">
+                <div class="filter-group filter-group--select">
+                    <label class="filter-label">เลือกเครื่อง</label>
+                    <select class="filter-select" id="machine-select">
+                        <option value="T34" selected>เครื่อง T34</option>
+                        <option value="T50">เครื่อง T50</option>
+                        <option value="T08">เครื่อง T08</option>
+                    </select>
+                </div>
+
+                <div class="filter-group filter-group--search">
+                    <label class="filter-label">ค้นหาเบอร์แกน</label>
+                    <div class="filter-input-wrapper">
+                        <svg class="filter-input-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" /></svg>
+                        <input type="text" class="filter-input" placeholder="เช่น 91, 96..." />
+                    </div>
+                </div>
+
+                <div class="filter-group filter-group--button">
+                    <button type="button" class="btn btn-primary btn-block">
+                        <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" /></svg>
+                        ค้นหาข้อมูล
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table Card -->
+        <div class="table-card">
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th class="col-center col-spindle">เบอร์แกน</th>
+                            <th class="col-symptom">อาการที่พบ</th>
+                            <th>มฐ.ชุดที่เกี่ยวข้อง</th>
+                            <th class="col-dates">วันที่เกิดเหตุ (เดือนนี้)</th>
+                            <th class="col-center col-count">ความถี่</th>
+                            <th class="col-center col-status">สถานะ</th>
+                            <th class="col-center col-actions">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+
+            <div class="table-footer">
+                <span class="table-footer-info">แสดง 1 ถึง 3 จาก 3 รายการ (เครื่อง T34)</span>
+                <div class="pagination">
+                    <button type="button" class="pagination-btn pagination-btn--left" disabled>ก่อนหน้า</button>
+                    <button type="button" class="pagination-btn pagination-btn--right">ถัดไป</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Setup Current Date ---
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('th-TH', dateOptions);
+
+        // เครื่องที่กำลังแสดงผลอยู่ตอนนี้ — ใช้ต่อ query string ตอนกดไปหน้ารายละเอียด
+        // (ในเวอร์ชันจริงควรอ่านค่านี้จาก machine-select ตอนโหลดข้อมูลจาก API)
+        const CURRENT_MACHINE = document.getElementById('machine-select').value;
+
+        // --- Mock Data (แทนที่ด้วยข้อมูลจาก C# / API ของจริงได้ภายหลัง) ---
+        const defectData = [
+            {
+                id: '91',
+                symptom: 'ขุยหัวหลอด',
+                parts: ['ตะขอ', 'ชุดห่วงด้ายผ่าน'],
+                dates: ['10/09/26', '12/09/26', '18/09/26'],
+                count: 3,
+                status: 'pending'
+            },
+            {
+                id: '96',
+                symptom: 'ขุยทั้งหลอด',
+                parts: ['ชุดวงแหวน', 'ศูนย์สปินเดิ้ล'],
+                dates: ['01/09/26', '06/09/26'],
+                count: 2,
+                status: 'pending'
+            },
+            {
+                id: '10',
+                symptom: 'ขุยท้ายหลอด',
+                parts: ['แผงกั้น'],
+                dates: ['18/09/26'],
+                count: 1,
+                status: 'completed'
+            }
+        ];
+
+        // --- Helper Functions ---
+        function renderDateBadges(dates) {
+            return dates.map(date =>
+                `<span class="date-badge">
+                    <svg class="date-badge-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1v3m5-3v3m5-3v3M1 7h18M5 11h10M2 3h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+                    ${date}
+                </span>`
+            ).join('');
+        }
+
+        function getCountBadge(count) {
+            let modifier = 'count-badge--low';
+            if (count >= 3) modifier = 'count-badge--high';
+            else if (count === 2) modifier = 'count-badge--medium';
+            return `<span class="count-badge ${modifier}">${count}</span>`;
+        }
+
+        function getStatusBadge(status) {
+            if (status === 'completed') {
+                return `<span class="status-badge status-badge--completed"><span class="status-dot"></span> ซ่อมเสร็จ</span>`;
+            }
+            return `<span class="status-badge status-badge--pending"><span class="status-dot status-dot--pulse"></span> รอดำเนินการ</span>`;
+        }
+
+        // --- Render Table ---
+        const tbody = document.getElementById('table-body');
+
+        defectData.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.className = 'data-row';
+
+            tr.innerHTML = `
+                <td class="col-center col-spindle-cell">${row.id}</td>
+                <td class="cell-symptom">${row.symptom}</td>
+                <td class="cell-muted">${row.parts.join(', ')}</td>
+                <td class="cell-dates">${renderDateBadges(row.dates)}</td>
+                <td class="col-center">
+                    <div class="count-cell">
+                        ${getCountBadge(row.count)}
+                        <span class="count-cell-label">ครั้ง</span>
+                    </div>
+                </td>
+                <td class="col-center">${getStatusBadge(row.status)}</td>
+                <td class="col-center">
+                    <a href="RepairDetail?machine=${CURRENT_MACHINE}&id=${row.id}" class="action-btn" title="ดูรายละเอียดและประวัติการซ่อม">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 13c4.97 0 9-2.686 9-6s-4.03-6-9-6-9 2.686-9 6 4.03 6 9 6Z"/></svg>
+                    </a>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    </script>
 </body>
 </html>

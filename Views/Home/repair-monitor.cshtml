@@ -1,0 +1,122 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>RepairTrack — แผงเฝ้าระวังงานซ่อม</title>
+<script src="~/js/theme-toggle.js" asp-append-version="true"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="~/css/repair-dashboard.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/app-home.css" asp-append-version="true" />
+</head>
+<body>
+
+  <div class="topbar">
+    <div>
+      <a class="monitor-nav" asp-controller="Home" asp-action="Index">← เมนูฟังก์ชัน</a>
+      <p class="eyebrow"><span class="dot">●</span> REPAIR TIMELINE MONITOR</p>
+      <h1>แผงเฝ้าระวังงาน<span class="accent">ซ่อม</span><span class="save-status" id="saveStatus"></span></h1>
+      <div class="month-bar">
+        <select id="monthSelect" class="month-select" aria-label="เลือกเดือน"></select>
+        <button type="button" id="addMonthBtn" class="add-month-btn">+ เพิ่มเดือน</button>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card crit">
+        <div class="label">🔴 เครื่องรอซ่อมทั้งหมดตอนนี้</div>
+        <div class="value"><span id="statPendingMachines">0</span><small>เครื่อง</small></div>
+      </div>
+      <div class="stat-card warn">
+        <div class="label">📈 อาการฮิตสัปดาห์นี้</div>
+        <div class="value" id="statHotIssue" style="font-size:18px;">–</div>
+      </div>
+      <button type="button" id="themeToggleBtn" class="theme-toggle-btn" title="สลับธีมสว่าง/มืด">
+        <span class="theme-icon">🌙</span>
+        <span class="theme-label">Dark Mode</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="tabs" id="partTabs"></div>
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="searchBox" placeholder="ค้นหาเครื่อง เช่น T09" />
+    </div>
+    <label class="toggle-pending">
+      <input type="checkbox" id="onlyPending" />
+      แสดงเฉพาะเครื่องที่มีงานค้าง
+    </label>
+    <div class="legend">
+      <span><i style="background:var(--red)"></i> งานหนัก / เพิ่มมาก</span>
+      <span><i style="background:var(--amber)"></i> งานงอก</span>
+      <span><i style="background:#5b8def"></i> ทรงตัว</span>
+      <span><i style="background:var(--green)"></i> ดีขึ้น / เคลียร์แล้ว</span>
+      <span><i style="background:#3a4257"></i> ไม่มีงาน</span>
+    </div>
+  </div>
+
+  <div class="board">
+    <div class="table-scroll">
+      <table>
+        <thead><tr id="tableHead"></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="note">// แตะที่แถวเครื่องเพื่อแก้ไขจำนวนอาการเสีย — สถานะปัจจุบันดึงจากค่าล่าสุดที่มีข้อมูลของแต่ละอาการ ไม่ใช่ผลรวมของทุกสัปดาห์</footer>
+
+  <div class="modal-backdrop" id="machineModalBackdrop" hidden>
+    <div class="machine-modal" id="machineModal" role="dialog" aria-modal="true" aria-labelledby="modalMachineId">
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow" id="modalPartName">–</p>
+          <h2 id="modalMachineId">–</h2>
+        </div>
+        <button type="button" class="modal-close" id="modalCloseBtn" aria-label="ปิด">✕</button>
+      </div>
+      <div class="modal-total" id="modalTotal"></div>
+      <div id="modalWeekPicker"></div>
+      <div class="modal-issues" id="modalIssues"></div>
+      <div class="modal-footer">
+        <button type="button" id="modalSaveBtn" class="modal-save-btn"><span class="save-icon">💾</span> บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="newMonthModalBackdrop" hidden>
+    <div class="machine-modal new-month-modal" role="dialog" aria-modal="true" aria-labelledby="newMonthTitle">
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow">REPAIR TIMELINE</p>
+          <h2 id="newMonthTitle">เพิ่มเดือนใหม่</h2>
+        </div>
+        <button type="button" class="modal-close" id="newMonthCloseBtn" aria-label="ปิด">✕</button>
+      </div>
+      <div class="new-month-body">
+        <label class="new-month-label">เลือกเดือนที่ต้องการสร้าง</label>
+        <div class="thai-month-picker">
+          <div class="tmp-year-row">
+            <button type="button" class="tmp-year-btn" id="tmpYearPrev" aria-label="ปีก่อนหน้า">‹</button>
+            <strong class="tmp-year-label" id="tmpYearLabel">–</strong>
+            <button type="button" class="tmp-year-btn" id="tmpYearNext" aria-label="ปีถัดไป">›</button>
+          </div>
+          <div class="tmp-month-grid" id="tmpMonthGrid"></div>
+        </div>
+        <p class="new-month-hint" id="newMonthHint"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="createMonthBtn" class="modal-save-btn"><span class="save-icon">🗓️</span> สร้างเดือนนี้</button>
+      </div>
+    </div>
+  </div>
+
+<script src="~/js/repair-dashboard.js" asp-append-version="true"></script>
+</body>
+</html>

@@ -114,3 +114,6 @@ C:\Users\Deal7330Locked\AppData\Local\Temp\RepairTrack-verify\RepairTrack.runtim
 C:\Users\Deal7330Locked\AppData\Local\Temp\RepairTrack-verify\RepairTrack.dll
 C:\Users\Deal7330Locked\AppData\Local\Temp\RepairTrack-verify\RepairTrack.pdb
 C:\Users\Deal7330Locked\RepairTrack\obj\Debug\net10.0\compressed\i10tj0qqqe-{0}-w611998pz4-w611998pz4.gz
+C:\Users\Deal7330Locked\RepairTrack\obj\Debug\net10.0\compressed\ns7a5iu6m6-{0}-h5ocqvz014-h5ocqvz014.gz
+C:\Users\Deal7330Locked\RepairTrack\obj\Debug\net10.0\compressed\7jicd1fro6-{0}-18re9g44bt-18re9g44bt.gz
+C:\Users\Deal7330Locked\RepairTrack\obj\Debug\net10.0\compressed\xmrxbr8tb4-{0}-dpl5y0v5m2-dpl5y0v5m2.gz

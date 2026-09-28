@@ -1,0 +1,175 @@
+@{
+    ViewData["Title"] = "Dashboard แกนว่าง";
+    Layout = null; // หน้าเดี่ยวสมบูรณ์ในตัว เช่นเดียวกับ Index.cshtml — ถ้าใช้ _Layout.cshtml ร่วมกัน
+                   // ให้ตัดส่วน <head>/<html> ออก แล้วใส่ลิงก์ CSS ด้านล่างไว้ใน _Layout แทน
+}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- ใช้ app-home.css ร่วมกับ Index.cshtml เพื่อให้ธีม/สี/ฟอนต์เป็นชุดเดียวกัน -->
+    <link rel="stylesheet" href="~/css/app-home.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+</head>
+<body>
+
+    <!-- Navbar (แบบเดียวกับหน้า Index) -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <div class="navbar-logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                </div>
+                <span class="navbar-title">ระบบติดตามปัญหาแกนว่าง</span>
+                <span class="navbar-subtitle">Bobbin Defect Tracker</span>
+            </div>
+            <div class="navbar-actions">
+                <div class="navbar-date" id="current-date"></div>
+                <div class="navbar-avatar">ชA</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Subnav: สลับไปหน้ารายการแจ้งซ่อม (Index) -->
+    <div class="subnav">
+        <div class="subnav-container">
+            <a href="Dashboard" class="subnav-tab is-active">ภาพรวม (Dashboard)</a>
+            <a href="Index" class="subnav-tab">รายการแจ้งซ่อม</a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="page-container">
+
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <div class="dashboard-header-left">
+                <div class="dashboard-header-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 3v1.5a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V3" /><path d="M8.5 11h7M8.5 15h4.5" /></svg>
+                </div>
+                <div>
+                    <p class="dashboard-header-eyebrow">ภาพรวมสถานะเรียลไทม์</p>
+                    <h1 class="dashboard-header-title">Dashboard แกนว่าง</h1>
+                </div>
+            </div>
+            <button type="button" class="btn-refresh" id="refresh-btn">
+                <svg class="btn-refresh-icon" id="refresh-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7" /><path d="M21 3v6h-6" /></svg>
+                รีเฟรช
+            </button>
+        </div>
+
+        <!-- Machine Grid -->
+        <div class="machine-grid" id="machine-grid"></div>
+    </main>
+
+    <script>
+        // --- Setup Current Date ---
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('th-TH', dateOptions);
+
+        // ปรับ URL นี้ให้ตรงกับ route จริงของโปรเจค เช่น '/Home/Index' หรือ '/Bobbin/Index'
+        const INDEX_PAGE_URL = 'Index';
+
+        // --- ป้ายชื่ออาการ + ลำดับคอลัมน์คงที่ ---
+        const SYMPTOM_LABELS = {
+            head: 'ขุยหัวหลอด',
+            full: 'ขุยทั้งหลอด',
+            tail: 'ขุยท้ายหลอด'
+        };
+        const SYMPTOM_ORDER = ['head', 'full', 'tail'];
+        const SYMPTOM_BADGE_CLASS = {
+            head: 'symptom-badge--head',
+            full: 'symptom-badge--full',
+            tail: 'symptom-badge--tail'
+        };
+
+        // --- ข้อมูลจำลองของแต่ละเครื่อง (แทนที่ด้วยข้อมูลจริงจาก C#/API ได้ภายหลัง) ---
+        // แต่ละ record คือ 1 เบอร์แกน และ counts คือความถี่ของอาการที่พบบนแกนนั้นในเดือนนี้
+        const machines = [
+            { code: 'T01', records: [{ spindle: 14, counts: { head: 2, full: 1 } }, { spindle: 22, counts: { tail: 1 } }] },
+            { code: 'T02', records: [{ spindle: 9, counts: { tail: 1 } }] },
+            { code: 'T03', records: [{ spindle: 6, counts: { full: 1 } }, { spindle: 10, counts: { full: 1 } }] },
+            { code: 'T05', records: [{ spindle: 19, counts: { head: 3 } }, { spindle: 2, counts: { tail: 1 } }] },
+            { code: 'T06', records: [{ spindle: 5, counts: { tail: 1 } }] },
+            { code: 'T07', records: [{ spindle: 1, counts: { head: 2 } }] },
+            { code: 'T08', records: [{ spindle: 14, counts: { full: 2 } }, { spindle: 3, counts: { head: 1 } }] },
+            { code: 'T09', records: [{ spindle: 10, counts: { full: 2, tail: 1 } }] },
+            { code: 'T11', records: [{ spindle: 1, counts: { head: 4 } }] },
+            { code: 'T14', records: [{ spindle: 12, counts: { tail: 1 } }] },
+            { code: 'T15', records: [{ spindle: 9, counts: { full: 1 } }] },
+            { code: 'T17', records: [{ spindle: 1, counts: { head: 1 } }, { spindle: 18, counts: { tail: 2 } }] },
+            { code: 'T20', records: [{ spindle: 27, counts: { full: 1 } }] },
+            { code: 'T23', records: [{ spindle: 25, counts: { head: 2 } }] },
+            { code: 'T24', records: [{ spindle: 12, counts: { full: 3 } }, { spindle: 4, counts: { head: 1 } }] },
+            { code: 'T28', records: [{ spindle: 8, counts: { tail: 1 } }] },
+            { code: 'T31', records: [{ spindle: 15, counts: { head: 1, full: 1, tail: 1 } }] },
+            { code: 'T35', records: [{ spindle: 4, counts: { full: 1 } }] },
+            { code: 'T36', records: [{ spindle: 4, counts: { full: 1 } }] },
+            { code: 'T40', records: [{ spindle: 11, counts: { head: 2 } }, { spindle: 2, counts: { tail: 1 } }] }
+        ];
+
+        // หาคอลัมน์อาการที่ควรแสดงของเครื่องนั้น (เฉพาะอาการที่มีข้อมูลจริง)
+        function getColumnsForMachine(machine) {
+            const present = new Set();
+            machine.records.forEach(r => Object.keys(r.counts).forEach(k => present.add(k)));
+            return SYMPTOM_ORDER.filter(k => present.has(k));
+        }
+
+        function renderMachineCard(machine) {
+            const columns = getColumnsForMachine(machine);
+
+            const headerCells = columns.map(col => `<th>${SYMPTOM_LABELS[col]}</th>`).join('');
+
+            const rows = machine.records.map(r => {
+                const cells = columns.map(col => {
+                    const val = r.counts[col];
+                    return val
+                        ? `<td class="col-center"><span class="symptom-badge ${SYMPTOM_BADGE_CLASS[col]}">${val}</span></td>`
+                        : `<td class="col-center cell-dash">-</td>`;
+                }).join('');
+                return `<tr><td class="spindle-cell">${r.spindle}</td>${cells}</tr>`;
+            }).join('');
+
+            return `
+                <a class="machine-card" href="${INDEX_PAGE_URL}?machine=${machine.code}" title="ดูรายละเอียดเครื่อง ${machine.code}">
+                    <div class="machine-card-header">
+                        <div class="machine-card-header-left">
+                            <svg class="machine-card-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+                            <span>เครื่องจักร</span>
+                        </div>
+                        <span class="machine-card-code">${machine.code}</span>
+                    </div>
+                    <div class="machine-card-body">
+                        <table class="machine-table">
+                            <thead>
+                                <tr>
+                                    <th>เบอร์แกน</th>
+                                    ${headerCells}
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    </div>
+                </a>
+            `;
+        }
+
+        document.getElementById('machine-grid').innerHTML = machines.map(renderMachineCard).join('');
+
+        // --- Refresh Button (mock) ---
+        document.getElementById('refresh-btn').addEventListener('click', function () {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('is-spinning');
+            setTimeout(() => icon.classList.remove('is-spinning'), 600);
+            // TODO: เรียก API จริงเพื่อโหลดข้อมูลใหม่ แล้วเรียก render ใหม่อีกครั้ง
+        });
+    </script>
+</body>
+</html>

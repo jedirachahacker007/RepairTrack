@@ -1,0 +1,691 @@
+@{
+    ViewData["Title"] = "รายละเอียดการซ่อมแกน";
+    Layout = null; // หน้าเดี่ยวสมบูรณ์ในตัว เช่นเดียวกับ Index.cshtml / Dashboard.cshtml
+}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="~/css/app-home.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/repair-detail.css" asp-append-version="true" />
+</head>
+<body>
+
+    <!-- Navbar (แบบเดียวกับหน้าอื่น) -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <div class="navbar-logo">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>
+                </div>
+                <span class="navbar-title">ระบบติดตามปัญหาแกนว่าง</span>
+                <span class="navbar-subtitle">Bobbin Defect Tracker</span>
+            </div>
+            <div class="navbar-actions">
+                <div class="navbar-date" id="current-date"></div>
+                <div class="navbar-avatar">ชA</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="page-container">
+
+        <a href="Index" class="detail-back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+            กลับไปหน้ารายการ
+        </a>
+
+        <div id="detail-content">
+            <!-- เนื้อหาถูก render ด้วย JS ด้านล่าง -->
+        </div>
+    </main>
+
+    <script>
+        // ==========================================================================
+        // Setup
+        // ==========================================================================
+        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').textContent = new Date().toLocaleDateString('th-TH', dateOptions);
+
+        // "วันนี้" อ้างอิงคงที่ไว้เพื่อให้ข้อมูลจำลองสอดคล้องกัน — ของจริงเปลี่ยนเป็น new Date() ได้เลย
+        const TODAY = '2026-09-22';
+
+        const params = new URLSearchParams(window.location.search);
+        const machineParam = params.get('machine') || 'T34';
+        const idParam = params.get('id') || '';
+
+        // ==========================================================================
+        // ข้อมูลจำลอง — โครงสร้างใหม่: เก็บแค่ "ประวัติ" (history) เป็น log เดียว
+        // ส่วน "ความถี่เดือนนี้ / สถานะ / วันล่าสุด / แนวโน้ม" ทั้งหมดคำนวณจาก history
+        // แทนที่ด้วยข้อมูลจาก C# / API ของจริงได้ภายหลัง (เช่นดึงจาก defect_data.json จริง)
+        // ==========================================================================
+        const spindleDetails = {
+            'T34-91': {
+                machine: 'T34',
+                id: '91',
+                symptom: 'ขุยหัวหลอด',
+                history: [
+                    { date: '2026-02-04', part: 'ตะขอ', issue: 'ตะขอผิดเบอร์', action: 'เปลี่ยนตะขอให้ตรงเบอร์', result: 'หายแล้ว', by: 'ช่าง A' },
+                    { date: '2026-03-11', part: 'ชุดห่วงด้ายผ่าน', issue: 'น๊อตยึดห่วงกับบานพับคลายตัว', action: 'ขันน๊อตยึดใหม่', result: 'หายแล้ว', by: 'ช่าง B' },
+                    { date: '2026-04-02', part: 'ศูนย์สปินเดิ้ล', issue: 'น๊อตยึดปลอกเสียบคลายตัว', action: 'ขันน๊อตปลอกเสียบใหม่', result: 'ดีขึ้นชั่วคราว', by: 'ช่าง A' },
+                    { date: '2026-04-19', part: 'ตะขอ', issue: 'ตะขอสึก', action: 'เปลี่ยนตะขอใหม่', result: 'หายแล้ว', by: 'ช่าง C' },
+                    { date: '2026-05-08', part: 'ชุดห่วงด้ายผ่าน', issue: 'สลักหลวม', action: 'เปลี่ยนสลักใหม่', result: 'หายแล้ว', by: 'ช่าง A' },
+                    { date: '2026-06-14', part: 'ศูนย์สปินเดิ้ล', issue: 'ไม่มีแหวนรอง', action: 'ใส่แหวนรองเพิ่ม', result: 'ดีขึ้นชั่วคราว', by: 'ช่าง B' },
+                    { date: '2026-06-30', part: 'ตะขอ', issue: 'ตะขอผิดด้าน', action: 'สลับด้านตะขอให้ถูกต้อง', result: 'หายแล้ว', by: 'ช่าง A' },
+                    { date: '2026-07-05', part: 'ชุดห่วงด้ายผ่าน', issue: 'บิดงอ', action: 'ดัดปรับให้ตรง', result: 'ไม่หาย', by: 'ช่าง C' },
+                    { date: '2026-07-21', part: 'ชุดห่วงด้ายผ่าน', issue: 'ไม่มีถ่วงน้ำหนัก', action: 'เพิ่มตุ้มถ่วงน้ำหนัก', result: 'หายแล้ว', by: 'ช่าง B' },
+                    { date: '2026-08-09', part: 'ศูนย์สปินเดิ้ล', issue: 'น้ำมัน #32 แห้ง', action: 'หยอดน้ำมันหล่อลื่นใหม่', result: 'ดีขึ้นชั่วคราว', by: 'ช่าง A' },
+                    { date: '2026-08-27', part: 'ศูนย์สปินเดิ้ล', issue: 'ลูกปืนแกนเสียบแตกชำรุด', action: 'เปลี่ยนลูกปืนใหม่', result: 'ไม่หาย', by: 'ช่าง C' },
+                    { date: '2026-09-10', part: 'ตะขอ', issue: 'ตะขอผิดเบอร์', action: 'เปลี่ยนตะขอใหม่', result: 'ไม่หาย', by: 'ช่าง A' },
+                    { date: '2026-09-12', part: 'ตะขอ', issue: 'ตะขอผิดด้าน', action: 'ปรับระดับตะขอ', result: 'ไม่หาย', by: 'ช่าง B' },
+                    { date: '2026-09-18', part: null, issue: 'รอดำเนินการ', action: 'ยังไม่ได้เข้าซ่อม', result: 'รอดำเนินการ', by: '-' }
+                ]
+            },
+            'T34-96': {
+                machine: 'T34',
+                id: '96',
+                symptom: 'ขุยทั้งหลอด',
+                history: [
+                    { date: '2026-04-14', part: 'ชุดวงแหวน', issue: 'น๊อตยึดชุดวงแหวนกับคาน', action: 'ขันน๊อตยึดชุดวงแหวนใหม่', result: 'ดีขึ้นชั่วคราว', by: 'ช่าง A' },
+                    { date: '2026-06-02', part: 'ชุดวงแหวน', issue: 'น๊อตล็อควงแหวนคลาย', action: 'ขันน็อตล็อคใหม่', result: 'หายแล้ว', by: 'ช่าง B' },
+                    { date: '2026-08-17', part: 'ชุดวงแหวน', issue: 'น๊อตยึดชุดวงแหวนกับคาน', action: 'ขันน๊อตยึดใหม่ + ล็อกเกลียว', result: 'ไม่หาย', by: 'ช่าง A' },
+                    { date: '2026-08-22', part: 'ชุดวงแหวน', issue: 'น๊อตยึดชุดวงแหวนกับคาน', action: 'เปลี่ยนน๊อตตัวใหม่', result: 'ดีขึ้นชั่วคราว', by: 'ช่าง C' },
+                    { date: '2026-09-01', part: 'ชุดวงแหวน', issue: 'น๊อตล็อควงแหวนคลาย', action: 'ทำความสะอาดชุดวงแหวน', result: 'ดีขึ้นชั่วคราว', by: 'ช่าง A' },
+                    { date: '2026-09-06', part: null, issue: 'รอดำเนินการ', action: 'ยังไม่ได้เข้าซ่อม', result: 'รอดำเนินการ', by: '-' }
+                ]
+            },
+            'T34-10': {
+                machine: 'T34',
+                id: '10',
+                symptom: 'ขุยท้ายหลอด',
+                history: [
+                    { date: '2026-09-18', part: 'แผงกั้น', issue: 'บิดเบี้ยวสั่นคลอน', action: 'เปลี่ยนแผงกั้นใหม่', result: 'หายแล้ว', by: 'ช่าง B' }
+                ]
+            }
+        };
+
+        // ==========================================================================
+        // Helper: วันที่
+        // ==========================================================================
+        function formatDateDisplay(iso) {
+            const [y, m, d] = iso.split('-');
+            return `${d}/${m}/${y.slice(2)}`;
+        }
+
+        function monthKey(iso) { return iso.slice(0, 7); }
+
+        function daysBetween(fromIso, toIso) {
+            const a = new Date(fromIso + 'T00:00:00');
+            const b = new Date(toIso + 'T00:00:00');
+            return Math.round((b - a) / 86400000);
+        }
+
+        function formatDaysAgo(days) {
+            if (days === null) return 'ไม่มีข้อมูล';
+            if (days <= 0) return 'วันนี้';
+            if (days === 1) return 'เมื่อวาน';
+            return `${days} วันที่แล้ว`;
+        }
+
+        const MONTH_NAMES_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const MONTH_NAMES_FULL = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+
+        function formatMonthLabel(key) {
+            const [y, m] = key.split('-').map(Number);
+            return `${MONTH_NAMES_FULL[m - 1]} ${y}`;
+        }
+
+        // ==========================================================================
+        // Helper: badge / สถานะ (ใช้ style เดียวกับหน้า Index)
+        // ==========================================================================
+        function renderDateBadges(dates) {
+            return dates.map(date =>
+                `<span class="date-badge">
+                    <svg class="date-badge-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1v3m5-3v3m5-3v3M1 7h18M5 11h10M2 3h16a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/></svg>
+                    ${date}
+                </span>`
+            ).join('');
+        }
+
+        function getStatusBadge(status) {
+            if (status === 'completed') {
+                return `<span class="status-badge status-badge--completed"><span class="status-dot"></span> ซ่อมเสร็จ</span>`;
+            }
+            return `<span class="status-badge status-badge--pending"><span class="status-dot status-dot--pulse"></span> รอดำเนินการ</span>`;
+        }
+
+        function getSeverity(count) {
+            if (count >= 3) return 'high';
+            if (count === 2) return 'medium';
+            return 'low';
+        }
+
+        const SEVERITY_ICON = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>`;
+
+        // ==========================================================================
+        // คำนวณสถิติทั้งหมดจาก history เพียงชุดเดียว (single source of truth)
+        // ==========================================================================
+        function computeStats(history, todayIso) {
+            const todayMonth = monthKey(todayIso);
+            const d = new Date(todayIso + 'T00:00:00');
+            const lastMonthDate = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+            const lastMonthKey = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+            const thisMonthEntries = history.filter(h => monthKey(h.date) === todayMonth);
+            const lastMonthEntries = history.filter(h => monthKey(h.date) === lastMonthKey);
+
+            const sorted = [...history].sort((a, b) => a.date.localeCompare(b.date));
+            const lastEntry = sorted[sorted.length - 1] || null;
+
+            const distinctMonths = new Set(history.map(h => monthKey(h.date))).size;
+
+            return {
+                thisMonthEntries,
+                thisMonthCount: thisMonthEntries.length,
+                totalCount: history.length,
+                daysSinceLast: lastEntry ? daysBetween(lastEntry.date, todayIso) : null,
+                trendDiff: thisMonthEntries.length - lastMonthEntries.length,
+                status: lastEntry && lastEntry.result === 'หายแล้ว' ? 'completed' : 'pending',
+                distinctMonths: distinctMonths
+            };
+        }
+
+        function uniqueParts(entries) {
+            const set = new Set();
+            entries.forEach(e => { if (e.part) set.add(e.part); });
+            return Array.from(set);
+        }
+
+        function formatTrend(diff) {
+            if (diff > 0) return { text: `▲ เพิ่มขึ้น ${diff} ครั้ง`, cls: 'trend-up' };
+            if (diff < 0) return { text: `▼ ลดลง ${Math.abs(diff)} ครั้ง`, cls: 'trend-down' };
+            return { text: '— เท่าเดิมกับเดือนก่อน', cls: 'trend-flat' };
+        }
+
+        // ==========================================================================
+        // สรุปผลโดยรวม — คำนวณจากประวัติจริงล้วนๆ (ไม่ใช่ข้อความตายตัว):
+        // อัตราซ่อมแล้วหายจริง / ความถี่เฉลี่ยที่เกิดซ้ำ / สัดส่วนตามจุดที่เกี่ยวข้อง / ผลลัพธ์แต่ละแบบ
+        // ==========================================================================
+        function averageIntervalDays(history) {
+            if (history.length < 2) return null;
+            const dates = history.map(h => h.date).sort();
+            let totalGap = 0;
+            for (let i = 1; i < dates.length; i++) {
+                totalGap += daysBetween(dates[i - 1], dates[i]);
+            }
+            return Math.round(totalGap / (dates.length - 1));
+        }
+
+        function buildSummaryPanel(data, stats) {
+            const history = data.history;
+            const total = history.length;
+
+            const partCounts = {};
+            history.forEach(h => { if (h.part) partCounts[h.part] = (partCounts[h.part] || 0) + 1; });
+            const partedTotal = Object.values(partCounts).reduce((a, b) => a + b, 0);
+            const sortedParts = Object.keys(partCounts).sort((a, b) => partCounts[b] - partCounts[a]);
+            const topPart = sortedParts[0] || '—';
+
+            const resultCounts = { 'หายแล้ว': 0, 'ดีขึ้นชั่วคราว': 0, 'ไม่หาย': 0, 'รอดำเนินการ': 0 };
+            history.forEach(h => { if (resultCounts[h.result] !== undefined) resultCounts[h.result]++; });
+
+            const resolvedAttempts = total - resultCounts['รอดำเนินการ'];
+            const successRate = resolvedAttempts > 0 ? Math.round((resultCounts['หายแล้ว'] / resolvedAttempts) * 100) : null;
+            const avgInterval = averageIntervalDays(history);
+
+            const sortedAll = [...history].sort((a, b) => a.date.localeCompare(b.date));
+            const earliestMonthLabel = sortedAll.length ? formatMonthLabel(monthKey(sortedAll[0].date)) : '—';
+            const todayMonthLabel = formatMonthLabel(monthKey(TODAY));
+
+            const thisMonthSorted = [...stats.thisMonthEntries].sort((a, b) => a.date.localeCompare(b.date));
+            const thisMonthListHtml = thisMonthSorted.length > 0
+                ? thisMonthSorted.map(e => {
+                    const meta = resultMeta(e.result);
+                    const label = e.part ? `${e.part} — ${e.issue}` : e.issue;
+                    return `
+                        <div class="month-item">
+                            <span class="month-item-date">${formatDateDisplay(e.date)}</span>
+                            <span class="month-item-text">${label}</span>
+                            <span class="month-item-result ${meta.cls}">${meta.icon} ${e.result}</span>
+                        </div>
+                    `;
+                }).join('')
+                : `<p class="month-empty">ยังไม่มีรายการแจ้งซ่อมในเดือนนี้</p>`;
+
+            const partBarsHtml = sortedParts.map(p => {
+                const pct = partedTotal > 0 ? Math.round((partCounts[p] / partedTotal) * 100) : 0;
+                return `
+                    <div class="bar-row">
+                        <span class="bar-row-label">${p}</span>
+                        <div class="bar-row-track"><div class="bar-row-fill" style="width:${pct}%"></div></div>
+                        <span class="bar-row-value">${partCounts[p]} ครั้ง (${pct}%)</span>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="summary-panel">
+                    <h4 class="section-heading">สรุปผลโดยรวม</h4>
+                    <p class="section-hint">ข้อมูลสะสมทั้งหมด ${total} ครั้ง ตั้งแต่ ${earliestMonthLabel} ถึงปัจจุบัน (${stats.distinctMonths} เดือนที่มีข้อมูล)</p>
+
+                    <div class="summary-metrics">
+                        <div class="summary-metric">
+                            <p class="summary-metric-value">${successRate !== null ? successRate + '%' : '—'}</p>
+                            <p class="summary-metric-label">ซ่อมแล้วหายจริง</p>
+                        </div>
+                        <div class="summary-metric">
+                            <p class="summary-metric-value">${avgInterval !== null ? 'ทุก ~' + avgInterval + ' วัน' : '—'}</p>
+                            <p class="summary-metric-label">ความถี่เฉลี่ยที่เกิดซ้ำ</p>
+                        </div>
+                        <div class="summary-metric">
+                            <p class="summary-metric-value">${topPart}</p>
+                            <p class="summary-metric-label">จุดที่เป็นปัญหาบ่อยที่สุด</p>
+                        </div>
+                    </div>
+
+                    <div class="summary-split">
+                        <div class="summary-box summary-box--month">
+                            <div class="summary-box-header">
+                                <span class="summary-box-tag summary-box-tag--month">เดือนนี้</span>
+                                <span class="summary-box-title">${todayMonthLabel}</span>
+                                <span class="summary-box-count">${thisMonthSorted.length} ครั้ง</span>
+                            </div>
+                            <div class="summary-box-body">
+                                <div class="month-item-list">${thisMonthListHtml}</div>
+                            </div>
+                        </div>
+
+                        <div class="summary-box summary-box--all">
+                            <div class="summary-box-header">
+                                <span class="summary-box-tag summary-box-tag--all">ทั้งหมด</span>
+                                <span class="summary-box-title">ตั้งแต่ ${earliestMonthLabel}</span>
+                                <span class="summary-box-count">${total} ครั้ง</span>
+                                <button type="button" class="summary-box-expand" id="expand-all-btn" title="ขยายดูสรุปข้อมูลทั้งหมด">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+                                    ขยาย
+                                </button>
+                            </div>
+                            <div class="summary-box-body">
+                                ${sortedParts.length > 0 ? partBarsHtml : `<p class="month-empty">ยังไม่มีข้อมูล</p>`}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================================================
+        // Heatmap ความถี่ย้อนหลัง 53 สัปดาห์ (~1 ปี) — ขนาดคงที่เสมอไม่ว่าประวัติจะยาวแค่ไหน
+        // ==========================================================================
+        function levelForCount(count) {
+            if (count <= 0) return 0;
+            if (count === 1) return 1;
+            if (count === 2) return 2;
+            return 3;
+        }
+
+        function renderHeatmap(history, todayIso) {
+            const WEEKS = 53;
+            const totalCells = WEEKS * 7;
+            const today = new Date(todayIso + 'T00:00:00');
+            const endDow = today.getDay();
+            const end = new Date(today);
+            end.setDate(end.getDate() + (6 - endDow));
+            const start = new Date(end);
+            start.setDate(start.getDate() - (totalCells - 1));
+
+            const counts = {};
+            history.forEach(h => { counts[h.date] = (counts[h.date] || 0) + 1; });
+
+            let cellsHtml = '';
+            let monthsHtml = '';
+            let lastMonth = -1;
+
+            for (let i = 0; i < totalCells; i++) {
+                const d = new Date(start);
+                d.setDate(d.getDate() + i);
+                const iso = d.toISOString().slice(0, 10);
+                const col = Math.floor(i / 7) + 1;
+
+                if (i % 7 === 0 && d.getMonth() !== lastMonth) {
+                    monthsHtml += `<div class="heatmap-month-label" style="grid-column:${col}">${MONTH_NAMES_SHORT[d.getMonth()]}</div>`;
+                    lastMonth = d.getMonth();
+                }
+
+                if (d > today) {
+                    cellsHtml += `<div class="heatmap-cell heatmap-cell--empty" style="grid-column:${col}"></div>`;
+                } else {
+                    const level = levelForCount(counts[iso] || 0);
+                    cellsHtml += `<div class="heatmap-cell heatmap-level-${level}" style="grid-column:${col}" title="${formatDateDisplay(iso)}: ${counts[iso] || 0} ครั้ง"></div>`;
+                }
+            }
+
+            return `
+                <div class="heatmap-wrapper">
+                    <div class="heatmap-scroll">
+                        <div class="heatmap-months">${monthsHtml}</div>
+                        <div class="heatmap-grid">${cellsHtml}</div>
+                    </div>
+                    <div class="heatmap-legend">
+                        <span>น้อย</span>
+                        <span class="heatmap-cell heatmap-level-0"></span>
+                        <span class="heatmap-cell heatmap-level-1"></span>
+                        <span class="heatmap-cell heatmap-level-2"></span>
+                        <span class="heatmap-cell heatmap-level-3"></span>
+                        <span>มาก</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================================================
+        // ประวัติแบบจัดกลุ่มรายเดือน (accordion) — แทนตารางยาวที่โตขึ้นเรื่อยๆ
+        // ค่าเริ่มต้นเปิดเฉพาะเดือนล่าสุด เดือนอื่นพับไว้ ไม่ว่าจะมีกี่สิบ/กี่ร้อยรายการ
+        // ==========================================================================
+        function resultMeta(result) {
+            if (result === 'หายแล้ว') return { icon: '✅', cls: 'result-good' };
+            if (result === 'ไม่หาย') return { icon: '❌', cls: 'result-bad' };
+            if (result === 'รอดำเนินการ') return { icon: '⏳', cls: 'result-pending' };
+            return { icon: '⚠️', cls: 'result-warn' };
+        }
+
+        function renderHistoryEntry(h) {
+            const meta = resultMeta(h.result);
+            const partLabel = h.part ? `<span class="history-entry-part">${h.part}</span> — ` : '';
+            return `
+                <div class="history-entry">
+                    <div class="history-entry-date">${formatDateDisplay(h.date)}</div>
+                    <div class="history-entry-body">
+                        <p class="history-entry-issue">${partLabel}${h.issue}</p>
+                        <p class="history-entry-action">${h.result === 'รอดำเนินการ' ? h.action : 'แก้ไข: ' + h.action}</p>
+                    </div>
+                    <div class="history-entry-result ${meta.cls}">${meta.icon} ${h.result}</div>
+                    <div class="history-entry-by">${h.by}</div>
+                </div>
+            `;
+        }
+
+        function renderHistoryGroups(history) {
+            if (history.length === 0) {
+                return `<p class="history-empty-text">ไม่พบประวัติการซ่อมของแกนนี้</p>`;
+            }
+            const groups = {};
+            history.forEach(h => {
+                const key = monthKey(h.date);
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(h);
+            });
+            const orderedKeys = Object.keys(groups).sort().reverse();
+
+            return orderedKeys.map((key, idx) => {
+                const entries = groups[key].sort((a, b) => b.date.localeCompare(a.date));
+                return `
+                    <details class="history-month" ${idx === 0 ? 'open' : ''}>
+                        <summary class="history-month-summary">
+                            <span class="history-month-name">${formatMonthLabel(key)}</span>
+                            <span class="history-month-count">${entries.length} ครั้ง</span>
+                        </summary>
+                        <div class="history-month-body">
+                            ${entries.map(renderHistoryEntry).join('')}
+                        </div>
+                    </details>
+                `;
+            }).join('');
+        }
+
+        // ==========================================================================
+        // การ์ดขยาย "สรุปข้อมูลสะสมทั้งหมด" — ออกแบบให้รองรับข้อมูลเยอะเป็นปี
+        // (กราฟรายเดือนเลื่อนแนวนอนได้ + แยกตามจุด → อาการ เนื้อหาเลื่อนแนวตั้งในการ์ด)
+        // ==========================================================================
+        function buildMonthlySeries(history) {
+            if (history.length === 0) return [];
+            const counts = {};
+            history.forEach(h => { const k = monthKey(h.date); counts[k] = (counts[k] || 0) + 1; });
+            const first = history.map(h => h.date).sort()[0];
+            let y = Number(first.slice(0, 4));
+            let m = Number(first.slice(5, 7));
+            const [endY, endM] = monthKey(TODAY).split('-').map(Number);
+            const series = [];
+            while (y < endY || (y === endY && m <= endM)) {
+                const k = `${y}-${String(m).padStart(2, '0')}`;
+                series.push({ key: k, month: m, year: y, count: counts[k] || 0 });
+                m++;
+                if (m > 12) { m = 1; y++; }
+            }
+            return series;
+        }
+
+        function buildAllTimeModalBody(data) {
+            const history = data.history;
+            const total = history.length;
+            const series = buildMonthlySeries(history);
+            const maxCount = Math.max(1, ...series.map(s => s.count));
+            const monthsSpan = series.length;
+            const avgPerMonth = monthsSpan > 0 ? (total / monthsSpan).toFixed(1) : '—';
+            const peak = series.reduce((best, s) => (s.count > best.count ? s : best), { count: -1 });
+            const avgInterval = averageIntervalDays(history);
+
+            const monthBarsHtml = series.map(s => {
+                const h = Math.round((s.count / maxCount) * 100);
+                const isCurrent = s.key === monthKey(TODAY);
+                const showYear = s.month === 1 || s === series[0];
+                return `
+                    <div class="mbar ${isCurrent ? 'mbar--current' : ''}" title="${formatMonthLabel(s.key)}: ${s.count} ครั้ง">
+                        <span class="mbar-count">${s.count}</span>
+                        <div class="mbar-track"><div class="mbar-fill" style="height:${h}%"></div></div>
+                        <span class="mbar-label">${MONTH_NAMES_SHORT[s.month - 1]}</span>
+                        <span class="mbar-year">${showYear ? String(s.year).slice(2) : ''}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // จัดกลุ่ม: จุดที่เกี่ยวข้อง → อาการที่พบ
+            const groups = {};
+            let pendingCount = 0;
+            history.forEach(h => {
+                if (!h.part) { pendingCount++; return; }
+                if (!groups[h.part]) groups[h.part] = { count: 0, issues: {} };
+                groups[h.part].count++;
+                if (!groups[h.part].issues[h.issue]) groups[h.part].issues[h.issue] = { count: 0, last: h.date };
+                groups[h.part].issues[h.issue].count++;
+                if (h.date > groups[h.part].issues[h.issue].last) groups[h.part].issues[h.issue].last = h.date;
+            });
+            const partedTotal = Object.values(groups).reduce((a, g) => a + g.count, 0);
+            const partNames = Object.keys(groups).sort((a, b) => groups[b].count - groups[a].count);
+
+            const groupsHtml = partNames.map(p => {
+                const g = groups[p];
+                const pct = partedTotal > 0 ? Math.round((g.count / partedTotal) * 100) : 0;
+                const issueNames = Object.keys(g.issues).sort((a, b) => g.issues[b].count - g.issues[a].count);
+                const issuesHtml = issueNames.map(i => `
+                    <div class="xissue">
+                        <span class="xissue-name">${i}</span>
+                        <span class="xissue-last">ล่าสุด ${formatDateDisplay(g.issues[i].last)}</span>
+                        <span class="xissue-count">${g.issues[i].count} ครั้ง</span>
+                    </div>
+                `).join('');
+                return `
+                    <div class="xpart">
+                        <div class="xpart-head">
+                            <span class="xpart-name">${p}</span>
+                            <div class="bar-row-track xpart-track"><div class="bar-row-fill" style="width:${pct}%"></div></div>
+                            <span class="xpart-value">${g.count} ครั้ง (${pct}%)</span>
+                        </div>
+                        <div class="xissue-list">${issuesHtml}</div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="xstats">
+                    <div class="xstat"><p class="xstat-value">${total}</p><p class="xstat-label">ครั้งทั้งหมด</p></div>
+                    <div class="xstat"><p class="xstat-value">${monthsSpan}</p><p class="xstat-label">เดือนที่ครอบคลุม</p></div>
+                    <div class="xstat"><p class="xstat-value">${avgPerMonth}</p><p class="xstat-label">เฉลี่ยครั้ง/เดือน</p></div>
+                    <div class="xstat"><p class="xstat-value">${peak.count >= 0 ? MONTH_NAMES_SHORT[peak.month - 1] + ' ' + String(peak.year).slice(2) : '—'}</p><p class="xstat-label">เดือนที่เกิดมากสุด (${peak.count >= 0 ? peak.count : 0} ครั้ง)</p></div>
+                </div>
+
+                <h5 class="xsection-title">จำนวนครั้งรายเดือน</h5>
+                <div class="mbar-scroll"><div class="mbar-chart">${monthBarsHtml}</div></div>
+
+                <h5 class="xsection-title">แยกตามจุดที่เกี่ยวข้อง และอาการที่พบ</h5>
+                ${groupsHtml || '<p class="month-empty">ยังไม่มีข้อมูล</p>'}
+                ${pendingCount > 0 ? `<p class="xnote">ยังไม่ระบุจุด (รอดำเนินการ) อีก ${pendingCount} ครั้ง ไม่รวมในสัดส่วนด้านบน</p>` : ''}
+                ${avgInterval !== null ? `<p class="xnote">ความถี่เฉลี่ยที่เกิดซ้ำ ทุก ~${avgInterval} วัน</p>` : ''}
+            `;
+        }
+
+        function buildAllTimeModal(data) {
+            const sorted = [...data.history].sort((a, b) => a.date.localeCompare(b.date));
+            const earliestLabel = sorted.length ? formatMonthLabel(monthKey(sorted[0].date)) : '—';
+            return `
+                <div class="expand-backdrop" id="expand-modal" role="dialog" aria-modal="true" aria-labelledby="expand-title">
+                    <div class="expand-modal">
+                        <div class="expand-header">
+                            <div>
+                                <h3 class="expand-title" id="expand-title">สรุปข้อมูลสะสมทั้งหมด</h3>
+                                <p class="expand-subtitle">แกน ${data.id} · เครื่อง ${data.machine} · ตั้งแต่ ${earliestLabel} – ปัจจุบัน</p>
+                            </div>
+                            <button type="button" class="expand-close" id="expand-close-btn" aria-label="ปิด">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 14 14"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6"/></svg>
+                            </button>
+                        </div>
+                        <div class="expand-body">${buildAllTimeModalBody(data)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function wireAllTimeModal() {
+            const modal = document.getElementById('expand-modal');
+            const openBtn = document.getElementById('expand-all-btn');
+            const closeBtn = document.getElementById('expand-close-btn');
+            if (!modal || !openBtn) return;
+
+            function open() { modal.classList.add('is-open'); document.body.style.overflow = 'hidden'; }
+            function close() { modal.classList.remove('is-open'); document.body.style.overflow = ''; }
+
+            openBtn.addEventListener('click', open);
+            closeBtn.addEventListener('click', close);
+            modal.addEventListener('click', function (e) { if (e.target === modal) close(); });
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+        }
+
+        // ==========================================================================
+        // Render หน้าเต็ม
+        // ==========================================================================
+        function renderDetail(data) {
+            const stats = computeStats(data.history, TODAY);
+            const severity = getSeverity(stats.thisMonthCount);
+            const trend = formatTrend(stats.trendDiff);
+            const parts = uniqueParts(stats.thisMonthEntries);
+            const thisMonthDates = stats.thisMonthEntries.map(e => formatDateDisplay(e.date));
+            const summaryBlock = buildSummaryPanel(data, stats);
+
+            document.getElementById('detail-content').innerHTML = `
+                <div class="detail-card">
+                    <div class="detail-card-body">
+
+                        <div class="detail-header">
+                            <div class="detail-header-left">
+                                <h1 class="detail-title">ประวัติการซ่อม: แกน <span class="detail-title-accent">${data.id}</span></h1>
+                                <p class="detail-subtitle">เครื่อง ${data.machine} | อาการ: <span class="detail-subtitle-strong">${data.symptom}</span></p>
+                            </div>
+                            <div class="detail-header-right">${getStatusBadge(stats.status)}</div>
+                        </div>
+
+                        <div class="stat-chip-row">
+                            <div class="summary-stat summary-stat--${severity}">
+                                <div class="summary-stat-icon">${SEVERITY_ICON}</div>
+                                <div>
+                                    <p class="summary-stat-label">เกิดซ้ำเดือนนี้</p>
+                                    <p class="summary-stat-value">${stats.thisMonthCount} <span class="summary-stat-unit">ครั้ง</span></p>
+                                </div>
+                            </div>
+                            <div class="stat-chip">
+                                <p class="stat-chip-label">สะสมทั้งหมด</p>
+                                <p class="stat-chip-value">${stats.totalCount} <span class="stat-chip-unit">ครั้ง</span></p>
+                            </div>
+                            <div class="stat-chip">
+                                <p class="stat-chip-label">ครั้งล่าสุด</p>
+                                <p class="stat-chip-value">${formatDaysAgo(stats.daysSinceLast)}</p>
+                            </div>
+                            <div class="stat-chip">
+                                <p class="stat-chip-label">แนวโน้มเทียบเดือนก่อน</p>
+                                <p class="stat-chip-value ${trend.cls}">${trend.text}</p>
+                            </div>
+                        </div>
+
+                        <div class="info-grid">
+                            <div class="info-card">
+                                <p class="info-card-label">มฐ.ชุดที่เกี่ยวข้อง (เดือนนี้)</p>
+                                <p class="info-card-value">${parts.length ? parts.join(', ') : '—'}</p>
+                            </div>
+                            <div class="info-card">
+                                <p class="info-card-label">วันที่เกิดเหตุ (เดือนนี้)</p>
+                                <div class="info-card-dates">${thisMonthDates.length ? renderDateBadges(thisMonthDates) : '<span class="cell-dash">ไม่มีในเดือนนี้</span>'}</div>
+                            </div>
+                        </div>
+
+                        ${summaryBlock}
+
+                        <div class="section-block">
+                            <h4 class="section-heading">ภาพรวมการเกิดซ้ำ (ย้อนหลัง ${stats.distinctMonths} เดือนที่มีข้อมูล)</h4>
+                            <p class="section-hint">แต่ละช่องแทน 1 วัน สีเข้มขึ้น = มีการแจ้งซ่อมในวันนั้น เลื่อนดูย้อนหลังได้ทั้งปีโดยไม่ต้องเลื่อนตารางยาวๆ</p>
+                            ${renderHeatmap(data.history, TODAY)}
+                        </div>
+
+                        <div class="section-block">
+                            <h4 class="section-heading">ประวัติการซ่อมทั้งหมด</h4>
+                            <p class="section-hint">จัดกลุ่มตามเดือน — เปิดดูเฉพาะเดือนล่าสุดโดยอัตโนมัติ กดที่ชื่อเดือนเพื่อดูรายละเอียดย้อนหลัง</p>
+                            <div class="history-month-list">${renderHistoryGroups(data.history)}</div>
+                        </div>
+                    </div>
+
+                    <div class="detail-footer">
+                        <a href="Index" class="btn btn-secondary">กลับไปหน้ารายการ</a>
+                        <button type="button" class="btn btn-primary" id="save-btn">บันทึกงานซ่อมวันนี้</button>
+                    </div>
+                </div>
+                ${buildAllTimeModal(data)}
+            `;
+
+            wireAllTimeModal();
+
+            document.getElementById('save-btn').addEventListener('click', function () {
+                // TODO: เชื่อมต่อ API จริงเพื่อบันทึกงานซ่อม
+                alert('บันทึกงานซ่อมสำหรับแกน ' + data.id + ' เรียบร้อย (ข้อมูลจำลอง)');
+            });
+        }
+
+        function renderEmptyState() {
+            document.getElementById('detail-content').innerHTML = `
+                <div class="detail-card">
+                    <div class="empty-state">
+                        <p class="empty-state-title">ไม่พบข้อมูลของแกนนี้</p>
+                        <p class="empty-state-text">ไม่มีข้อมูลสำหรับเครื่อง "${machineParam}" แกนเบอร์ "${idParam}" กรุณากลับไปเลือกจากหน้ารายการอีกครั้ง</p>
+                        <a href="Index" class="btn btn-primary">กลับไปหน้ารายการ</a>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- เริ่ม render ---
+        const key = `${machineParam}-${idParam}`;
+        const data = spindleDetails[key];
+
+        if (data) {
+            renderDetail(data);
+        } else {
+            renderEmptyState();
+        }
+    </script>
+</body>
+</html>

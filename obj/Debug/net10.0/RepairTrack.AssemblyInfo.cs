@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("RepairTrack")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7d21673760c162dc9fd7e3ab9e88c5cf90db9591")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7bbb0a21c1348b3bc2cf51276c09a34b5f37a97f")]
 [assembly: System.Reflection.AssemblyProductAttribute("RepairTrack")]
 [assembly: System.Reflection.AssemblyTitleAttribute("RepairTrack")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

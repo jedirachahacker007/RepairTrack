@@ -1,0 +1,285 @@
+/* ==========================================================================
+   dashboard.css
+   หน้า Dashboard ภาพรวมเครื่องจักร (Machine Overview Grid)
+   ใช้งานร่วมกับ app-home.css (ต้อง link app-home.css ไว้ก่อนไฟล์นี้เสมอ
+   เพราะ dashboard.css อ้างอิงตัวแปรสี/รัศมี/เงาจากไฟล์นั้น)
+   ========================================================================== */
+
+/* ---------- เพิ่มโทนสีที่ยังไม่มีใน app-home.css (สำหรับอาการ "ขุยทั้งหลอด") ---------- */
+:root {
+    --cyan-100: #cffafe;
+    --cyan-200: #a5f3fc;
+    --cyan-700: #0e7490;
+
+    --navy-card-header: #1e2635;
+    --navy-card-header-strong: #151b27;
+}
+
+/* ---------- Subnav (แท็บสลับหน้า) ---------- */
+.subnav {
+    background: #fff;
+    border-bottom: 1px solid var(--slate-200);
+}
+
+.subnav-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    gap: 4px;
+}
+
+.subnav-tab {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 4px;
+    margin-right: 20px;
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--slate-500);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+}
+
+.subnav-tab:hover {
+    color: var(--brand-800);
+}
+
+.subnav-tab.is-active {
+    color: var(--brand-800);
+    border-bottom-color: var(--brand-800);
+}
+
+/* ---------- Dashboard Header ---------- */
+.dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+
+.dashboard-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.dashboard-header-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: var(--brand-50);
+    color: var(--brand-800);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
+}
+
+.dashboard-header-eyebrow {
+    font-size: .8125rem;
+    color: var(--slate-400);
+    margin: 0 0 2px;
+}
+
+.dashboard-header-title {
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: var(--slate-900);
+    margin: 0;
+}
+
+.btn-refresh {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    background: var(--brand-50);
+    color: var(--brand-800);
+    border: 1px solid var(--brand-100);
+    border-radius: var(--radius-full);
+    font-size: .875rem;
+    font-weight: 600;
+    transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.btn-refresh:hover {
+    background: var(--brand-100);
+}
+
+.btn-refresh-icon {
+    transition: transform 500ms ease;
+}
+
+.btn-refresh-icon.is-spinning {
+    transform: rotate(360deg);
+}
+
+/* ---------- Machine Grid ---------- */
+.machine-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+/* ---------- Machine Card ---------- */
+.machine-card {
+    display: block;
+    background: #fff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--slate-200);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms ease;
+}
+
+.machine-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--brand-100);
+}
+
+.machine-card:focus-visible {
+    outline: 2px solid var(--brand-500);
+    outline-offset: 2px;
+}
+
+.machine-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, var(--navy-card-header), var(--navy-card-header-strong));
+    color: #fff;
+}
+
+.machine-card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, .85);
+}
+
+.machine-card-icon {
+    color: rgba(255, 255, 255, .7);
+    flex-shrink: 0;
+}
+
+.machine-card-code {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    background: rgba(255, 255, 255, .14);
+    color: #fff;
+    font-weight: 700;
+    font-size: .8125rem;
+    letter-spacing: .02em;
+    border-radius: var(--radius-full);
+}
+
+.machine-card-body {
+    padding: 0;
+}
+
+.machine-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .8125rem;
+    text-align: left;
+    color: var(--slate-600);
+}
+
+.machine-table thead {
+    background: var(--slate-50);
+    border-bottom: 1px solid var(--slate-200);
+}
+
+.machine-table th {
+    padding: 10px 16px;
+    font-size: .6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--slate-500);
+    white-space: nowrap;
+}
+
+.machine-table td {
+    padding: 10px 16px;
+    border-top: 1px solid var(--slate-100);
+}
+
+.machine-table tbody tr:first-child td {
+    border-top: none;
+}
+
+.spindle-cell {
+    font-weight: 700;
+    color: var(--red-500);
+}
+
+.cell-dash {
+    color: var(--slate-300);
+}
+
+/* ---------- Symptom Badges ---------- */
+.symptom-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 26px;
+    height: 26px;
+    padding: 0 8px;
+    font-size: .75rem;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    border: 1px solid transparent;
+}
+
+.symptom-badge--head {
+    background: var(--red-100);
+    color: var(--red-700);
+    border-color: var(--red-200);
+}
+
+.symptom-badge--full {
+    background: var(--cyan-100);
+    color: var(--cyan-700);
+    border-color: var(--cyan-200);
+}
+
+.symptom-badge--tail {
+    background: var(--amber-50);
+    color: var(--amber-700);
+    border-color: var(--amber-200);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 480px) {
+    .dashboard-header {
+        align-items: flex-start;
+    }
+
+    .machine-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---------- Reduced Motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .machine-card,
+    .btn-refresh-icon {
+        transition: none;
+    }
+
+    .btn-refresh-icon.is-spinning {
+        transform: none;
+    }
+}

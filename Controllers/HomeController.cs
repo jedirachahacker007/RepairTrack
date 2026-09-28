@@ -6,9 +6,28 @@ namespace RepairTrack.Controllers;
 
 public class HomeController : Controller
 {
+    [Route("/")]
+    [Route("Index")]
     public IActionResult Index()
     {
         return View();
+    }
+
+    [Route("Dashboard")]
+    public IActionResult Dashboard()
+    {
+        return View();
+    }
+
+    [Route("RepairDetail")]
+    public IActionResult RepairDetail()
+    {
+        return View();
+    }
+
+    public IActionResult RepairMonitor()
+    {
+        return View("repair-monitor");
     }
 
     public IActionResult Privacy()
